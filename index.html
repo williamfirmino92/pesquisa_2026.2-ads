@@ -520,14 +520,7 @@
 
   <div class="wrap">
 
-    <!-- ⚠️ CONFIG — remova após configurar -->
-    <div class="config-note" id="config-note">
-      <strong>⚠️ Configuração necessária</strong>
-      Substitua o valor de <code>APPS_SCRIPT_URL</code> no JavaScript por sua URL do Google Apps Script (arquivo
-      <code>apps_script_termometro.js</code>). Após configurar, remova este aviso.
-    </div>
-
-    <!-- Header -->
+        <!-- Header -->
     <div class="header">
       <div class="header-kicker">SENAC Rio · ADS · 2026.2</div>
       <h1>Termômetro de satisfação 🌡️</h1>
@@ -855,15 +848,13 @@
 
       let enviado = false;
       try {
-        if (APPS_SCRIPT_URL !== "https://script.google.com/macros/s/AKfycbzkb1GunHk_ivbnAEQhKTB5bzSHzwFDfD2oPCCGLjP-5c6B3qtbf20g_5NfAWvL_kr3BA/exec") {
-          await fetch(APPS_SCRIPT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dados)
-          });
-          enviado = true;
-        }
+        await fetch(APPS_SCRIPT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(dados)
+        });
+        enviado = true;
       } catch (err) {
         console.error('Erro ao enviar:', err);
       }
@@ -876,14 +867,11 @@
       s.classList.add('show');
 
       const statusEl = document.getElementById('send-status');
-      if (APPS_SCRIPT_URL === "https://script.google.com/macros/s/AKfycbzkb1GunHk_ivbnAEQhKTB5bzSHzwFDfD2oPCCGLjP-5c6B3qtbf20g_5NfAWvL_kr3BA/execCOLE_AQUI_A_URL_DO_APPS_SCRIPT") {
-        statusEl.textContent = '⚙️ Apps Script não configurado — resposta não salva';
-        statusEl.className = 'send-status err';
-      } else if (enviado) {
+      if (enviado) {
         statusEl.textContent = '✅ Resposta registrada na planilha';
         statusEl.className = 'send-status ok';
       } else {
-        statusEl.textContent = '⚠️ Erro ao enviar — verifique a URL do Apps Script';
+        statusEl.textContent = '⚠️ Erro ao enviar — tente novamente em instantes';
         statusEl.className = 'send-status err';
       }
 
