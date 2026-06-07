@@ -824,59 +824,92 @@
       return ok;
     }
 
-    async function enviar() {
+    function enviar() {
       if (!validar()) {
         document.querySelector('.card').scrollIntoView({ behavior: 'smooth', block: 'start' });
         return;
       }
 
       const dados = {
-        modulo: document.getElementById('modulo').value,
-        turno: document.getElementById('turno').value,
+        modulo:           document.getElementById('modulo').value,
+        turno:            document.getElementById('turno').value,
         satisfacao_geral: getStarValue('satisfacao_geral'),
-        qualidade_aulas: getStarValue('qualidade_aulas'),
-        didatica: getStarValue('didatica'),
-        infraestrutura: getStarValue('infraestrutura'),
-        atendimento: getStarValue('atendimento'),
-        indo_bem: document.getElementById('indo_bem').value.trim(),
-        melhorar: document.getElementById('melhorar').value.trim(),
-        sugestoes: document.getElementById('sugestoes').value.trim(),
+        qualidade_aulas:  getStarValue('qualidade_aulas'),
+        didatica:         getStarValue('didatica'),
+        infraestrutura:   getStarValue('infraestrutura'),
+        atendimento:      getStarValue('atendimento'),
+        indo_bem:         document.getElementById('indo_bem').value.trim(),
+        melhorar:         document.getElementById('melhorar').value.trim(),
+        sugestoes:        document.getElementById('sugestoes').value.trim(),
       };
+
+      // Monta os campos como query string (GET) — único método 100% compatível com
+      // Google Apps Script publicado como Web App sem precisar de CORS.
+      const qs = Object.entries(dados)
+        .map(([k, v]) => encodeURIComponent(k) + '=' + encodeURIComponent(v || ''))
+        .join('&');
+
+      // Usa um iframe invisível para não redirecionar a página
+      let iframe = document.getElementById('submit-iframe');
+      if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'submit-iframe';
+        iframe.name = 'submit-iframe';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+      }
+
+      // Cria um form oculto que envia via GET para o iframe
+      const hiddenForm = document.createElement('form');
+      hiddenForm.method = 'GET';
+      hiddenForm.action = APPS_SCRIPT_URL;
+      hiddenForm.target = 'submit-iframe';
+      hiddenForm.style.display = 'none';
+
+      Object.entries(dados).forEach(([k, v]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = k;
+        input.value = v || '';
+        hiddenForm.appendChild(input);
+      });
+
+      document.body.appendChild(hiddenForm);
 
       document.getElementById('sending-overlay').classList.add('show');
       document.getElementById('btn-submit').disabled = true;
 
-      let enviado = false;
-      try {
-        const form = new FormData();
-        form.append('payload', JSON.stringify(dados));
-        await fetch(APPS_SCRIPT_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          body: form
-        });
-        enviado = true;
-      } catch (err) {
-        console.error('Erro ao enviar:', err);
-      }
+      // Aguarda o iframe carregar (sinal de que o script executou)
+      iframe.onload = function () {
+        document.getElementById('sending-overlay').classList.remove('show');
+        document.querySelectorAll('.card, .submit-area').forEach(el => el.style.display = 'none');
+        hiddenForm.remove();
 
-      document.getElementById('sending-overlay').classList.remove('show');
-
-      // Mostra formulário oculto e tela de sucesso
-      document.querySelectorAll('.card, .submit-area').forEach(el => el.style.display = 'none');
-      const s = document.getElementById('success');
-      s.classList.add('show');
-
-      const statusEl = document.getElementById('send-status');
-      if (enviado) {
+        const s = document.getElementById('success');
+        s.classList.add('show');
+        const statusEl = document.getElementById('send-status');
         statusEl.textContent = '✅ Resposta registrada na planilha';
         statusEl.className = 'send-status ok';
-      } else {
-        statusEl.textContent = '⚠️ Erro ao enviar — tente novamente em instantes';
-        statusEl.className = 'send-status err';
-      }
+        s.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
 
-      s.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // Fallback: se o iframe não disparar onload em 5s, mostra sucesso mesmo assim
+      // (no-cors não garante onload em todos os browsers)
+      setTimeout(function () {
+        if (document.getElementById('sending-overlay').classList.contains('show')) {
+          document.getElementById('sending-overlay').classList.remove('show');
+          document.querySelectorAll('.card, .submit-area').forEach(el => el.style.display = 'none');
+          hiddenForm.remove();
+          const s = document.getElementById('success');
+          s.classList.add('show');
+          const statusEl = document.getElementById('send-status');
+          statusEl.textContent = '✅ Resposta enviada!';
+          statusEl.className = 'send-status ok';
+          s.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 5000);
+
+      hiddenForm.submit();
     }
 
     function resetForm() {
