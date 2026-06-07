@@ -848,11 +848,12 @@
 
       let enviado = false;
       try {
+        const form = new FormData();
+        form.append('payload', JSON.stringify(dados));
         await fetch(APPS_SCRIPT_URL, {
           method: 'POST',
           mode: 'no-cors',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(dados)
+          body: form
         });
         enviado = true;
       } catch (err) {
